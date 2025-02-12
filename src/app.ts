@@ -38,7 +38,8 @@ if (username === undefined || password === undefined || host === undefined) {
 }
 
 const enableSsl = config.redis.ssl;
-const prefix = process.env.NODE_ENV?.toLowerCase() || "local";
+const prefix = process.env.QUEUE_PREFIX?.toLowerCase() || "bull";
+const metricsPrefix = process.env.METRICS_PREFIX?.toLowerCase() || "";
 const cookieSecret = config.cookieSecret;
 const cookieMaxAge = config.cookieMaxAge;
 const defaultUsers: Array<User> = [
@@ -61,6 +62,7 @@ export const metricsCollector = new PrometheusMetricsCollector("monitor", {
   },
   client: new Redis(redisConnString, { maxRetriesPerRequest: null }),
   queues: [],
+  metricsPrefix,
 });
 
 handleFutureShutdown(metricsCollector);

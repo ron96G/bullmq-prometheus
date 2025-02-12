@@ -25,7 +25,14 @@ export class PrometheusMonitoredQueue extends bullmq.QueueEvents {
     opts: MonitoredQueueOptions
   ) {
     super(name, opts.bullmqOpts);
-    this.queue = new bullmq.Queue(name, opts.bullmqOpts);
+    this.queue = new bullmq.Queue(name, {
+      ...opts.bullmqOpts,
+      streams: {
+        events: {
+          maxLen: 10,
+        },
+      },
+    });
     this.metrics = metrics;
     this.on("completed", this.onCompleted);
     this.loop(2000);
@@ -39,12 +46,19 @@ export class PrometheusMonitoredQueue extends bullmq.QueueEvents {
 
     const completedDuration = job.finishedOn! - job.timestamp!; // both cannot be null
     const processedDuration = job.finishedOn! - job.processedOn!; // both cannot be null
+    const delayedDuration = job.processedOn! - job.timestamp!; // both cannot be null
     this.metrics.completedDuration
       .labels({ queue: this.name })
       .observe(completedDuration);
     this.metrics.processedDuration
       .labels({ queue: this.name })
       .observe(processedDuration);
+    this.metrics.completedSummary
+      .labels({ queue: this.name })
+      .observe(completedDuration);
+    this.metrics.delayedSummary
+      .labels({ queue: this.name })
+      .observe(delayedDuration);
   }
 
   async loop(ms = 5000) {

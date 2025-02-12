@@ -1,5 +1,4 @@
-ARG NODE_VERSION="18.12.0"
-ARG ALPINE_VERSION="3.16"
+ARG NODE_VERSION="20"
 
 FROM node:$NODE_VERSION as builder
 
@@ -12,7 +11,7 @@ COPY . .
 RUN npm run build
 
 
-FROM node:$NODE_VERSION-alpine$ALPINE_VERSION
+FROM node:$NODE_VERSION
 
 WORKDIR /app
 

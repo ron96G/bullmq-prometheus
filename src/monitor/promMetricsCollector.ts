@@ -8,6 +8,7 @@ export interface MetricsCollectorOptions {
   bullmqOpts: bullmq.QueueBaseOptions;
   client: Redis;
   queues?: Array<string>;
+  metricsPrefix: string;
 }
 
 export interface PrometheusMetrics {
@@ -18,6 +19,8 @@ export interface PrometheusMetrics {
   waitingGauge: prom_client.Gauge<any>;
   completedDuration: prom_client.Histogram<any>;
   processedDuration: prom_client.Histogram<any>;
+  completedSummary: prom_client.Summary<any>;
+  delayedSummary: prom_client.Summary<any>;
 }
 
 export class PrometheusMetricsCollector {
@@ -37,7 +40,7 @@ export class PrometheusMetricsCollector {
       connection: { maxRetriesPerRequest: null },
     };
     this.defaultRedisClient = opts.client;
-    this.registerMetrics(this.registry);
+    this.registerMetrics(this.registry, opts.metricsPrefix);
 
     if (opts.queues) {
       this.registerQueues(opts.queues);
@@ -91,6 +94,20 @@ export class PrometheusMetricsCollector {
         help: "Completion time for jobs (created until completed)",
         buckets: [5, 50, 100, 250, 500, 750, 1000, 2500, 5000, 10000],
         labelNames: ["queue"],
+      }),
+      completedSummary: new prom_client.Summary({
+        name: `${prefix}bullmq_e2e_duration`,
+        help: "Time to complete jobs",
+        labelNames: ["queue"],
+        maxAgeSeconds: 300,
+        ageBuckets: 13,
+      }),
+      delayedSummary: new prom_client.Summary({
+        name: `${prefix}bullmq_delayed_duration`,
+        help: "Time jobs were delayed",
+        labelNames: ["queue"],
+        maxAgeSeconds: 300,
+        ageBuckets: 13,
       }),
     };
 
